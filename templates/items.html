@@ -1,13 +1,32 @@
 <div class="main-container">
     <div class="sidebar">
+        <!-- Active Filters Section -->
+        <div class="sidebar-section" id="active-filters">
+            <h3 class="sidebar-title">Active Filters</h3>
+            <div class="active-filters" id="active-filters-container">
+                <!-- Active filters will be added here by JavaScript -->
+            </div>
+        </div>
+
         <div class="sidebar-section">
-            <h3 class="sidebar-title">Group By</h3>
+            <h3 class="sidebar-title">Group & Filter</h3>
             <div class="category-group">
-                <div class="category-header" onclick="setActiveGroup('color')">
-                    <span class="category-name">Color</span>
-                    <span class="category-count">{{len .Groups}}</span>
+                <div class="category-header">
+                    <div class="category-header-content" onclick="toggleCategory('color')">
+                        <span class="category-name">Color</span>
+                        <span class="category-count">{{len .AllColors}}</span>
+                    </div>
+                    <button class="group-by-btn" onclick="event.stopPropagation(); setActiveGroup('color')" 
+                            title="Group by Color">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                    </button>
                 </div>
-                <div class="category-items">
+                <div class="category-items" id="color-items">
                     {{range .AllColors}}
                     <div class="category-item" 
                          onclick="setActiveFilter('color', '{{.}}')">
@@ -19,10 +38,22 @@
             </div>
             
             <div class="category-group">
-                <div class="category-header" onclick="setActiveGroup('shape')">
-                    <span class="category-name">Shape</span>
+                <div class="category-header">
+                    <div class="category-header-content" onclick="toggleCategory('shape')">
+                        <span class="category-name">Shape</span>
+                        <span class="category-count">{{len .AllShapes}}</span>
+                    </div>
+                    <button class="group-by-btn" onclick="event.stopPropagation(); setActiveGroup('shape')" 
+                            title="Group by Shape">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                    </button>
                 </div>
-                <div class="category-items">
+                <div class="category-items" id="shape-items">
                     {{range .AllShapes}}
                     <div class="category-item" 
                          onclick="setActiveFilter('shape', '{{.}}')">
@@ -34,10 +65,22 @@
             </div>
             
             <div class="category-group">
-                <div class="category-header" onclick="setActiveGroup('category')">
-                    <span class="category-name">Category</span>
+                <div class="category-header">
+                    <div class="category-header-content" onclick="toggleCategory('category')">
+                        <span class="category-name">Category</span>
+                        <span class="category-count">{{len .AllCategories}}</span>
+                    </div>
+                    <button class="group-by-btn" onclick="event.stopPropagation(); setActiveGroup('category')" 
+                            title="Group by Category">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                    </button>
                 </div>
-                <div class="category-items">
+                <div class="category-items" id="category-items">
                     {{range .AllCategories}}
                     <div class="category-item" 
                          onclick="setActiveFilter('category', '{{.}}')">
@@ -215,15 +258,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Also update filter URLs when HTMX swaps content
+// Update UI after HTMX swaps content
 document.body.addEventListener('htmx:afterSwap', function() {
-    updateFilterUrls();
+    updateActiveFilters();
+    
+    // Re-attach event listeners to new elements if needed
+    const urlParams = new URLSearchParams(window.location.search);
+    const filterBy = urlParams.get('filterBy');
+    if (filterBy) {
+        const items = document.getElementById(`${filterBy}-items`);
+        if (items) items.classList.add('expanded');
+    }
 });
 </script>
 
 <style>
 :root {
     --bg-dark: #0a0a0a;
+    --card-header-bg: #1a1a1a;
+    --card-hover-bg: #252525;
     --bg-darker: #000000;
     --container-bg: #0f0f0f;
     --sidebar-bg: #121212;
