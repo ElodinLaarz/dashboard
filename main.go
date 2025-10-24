@@ -72,57 +72,94 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GroupedItems represents items grouped by shape
+// PropertyGetter is a function that gets a property value from an Item
+type PropertyGetter func(Item) string
+
+// GroupedItems represents items grouped by a specific property
 type GroupedItems struct {
-	Shape string
-	Items []Item
+	GroupName string
+	Property  string
+	Items     []Item
+}
+
+// getPropertyGetter returns the appropriate property getter function
+func getPropertyGetter(property string) (PropertyGetter, bool) {
+	switch property {
+	case "color":
+		return func(i Item) string { return i.Color }, true
+	case "shape":
+		return func(i Item) string { return i.Shape }, true
+	case "category":
+		return func(i Item) string { return i.Category }, true
+	default:
+		return nil, false
+	}
+}
+
+// groupItems groups items by the specified property
+func groupItems(items []Item, groupBy string) []GroupedItems {
+	getter, ok := getPropertyGetter(groupBy)
+	if !ok {
+		// If property is invalid, return all items in a single group
+		return []GroupedItems{{
+			GroupName: "All Items",
+			Property:  groupBy,
+			Items:     items,
+		}}
+	}
+
+	// Group items by the specified property
+	groupMap := make(map[string][]Item)
+	for _, item := range items {
+		value := getter(item)
+		groupMap[value] = append(groupMap[value], item)
+	}
+
+	// Convert to slice of GroupedItems
+	var result []GroupedItems
+	for value, items := range groupMap {
+		result = append(result, GroupedItems{
+			GroupName: value,
+			Property:  groupBy,
+			Items:     items,
+		})
+	}
+
+	// Sort groups by group name for consistent ordering
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].GroupName < result[j].GroupName
+	})
+
+	return result
 }
 
 func itemsHandler(w http.ResponseWriter, r *http.Request) {
 	// Get filter parameters
 	filterBy := r.URL.Query().Get("filterBy")
 	filterValue := r.URL.Query().Get("filterValue")
+	groupBy := r.URL.Query().Get("groupBy")
+
+	if groupBy == "" {
+		groupBy = "shape" // Default grouping by shape
+	}
 
 	// Filter items
 	var filteredItems []Item
 	if filterBy != "" && filterValue != "" {
-		for _, item := range items {
-			matches := false
-			switch filterBy {
-			case "color":
-				matches = item.Color == filterValue
-			case "shape":
-				matches = item.Shape == filterValue
-			case "category":
-				matches = item.Category == filterValue
-			}
-			if matches {
-				filteredItems = append(filteredItems, item)
+		getter, ok := getPropertyGetter(filterBy)
+		if ok {
+			for _, item := range items {
+				if getter(item) == filterValue {
+					filteredItems = append(filteredItems, item)
+				}
 			}
 		}
 	} else {
 		filteredItems = items
 	}
 
-	// Group items by shape
-	shapeMap := make(map[string][]Item)
-	for _, item := range filteredItems {
-		shapeMap[item.Shape] = append(shapeMap[item.Shape], item)
-	}
-
-	// Convert to slice of GroupedItems
-	var groupedItems []GroupedItems
-	for shape, items := range shapeMap {
-		groupedItems = append(groupedItems, GroupedItems{
-			Shape: shape,
-			Items: items,
-		})
-	}
-
-	// Sort groups by shape name for consistent ordering
-	sort.Slice(groupedItems, func(i, j int) bool {
-		return groupedItems[i].Shape < groupedItems[j].Shape
-	})
+	// Group items by the specified property
+	groupedItems := groupItems(filteredItems, groupBy)
 
 	// Create template with custom functions
 	funcMap := template.FuncMap{
@@ -138,9 +175,11 @@ func itemsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		Groups []GroupedItems
+		Groups  []GroupedItems
+		GroupBy string
 	}{
-		Groups: groupedItems,
+		Groups:  groupedItems,
+		GroupBy: groupBy,
 	}
 
 	if err := tmpl.Execute(w, data); err != nil {
