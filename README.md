@@ -1,53 +1,102 @@
 # Interactive Item Dashboard
 
-An interactive htmx-powered dashboard built with Go that allows dynamic organization of items by their properties.
+A dynamic, htmx-powered dashboard built with Go that allows filtering and grouping of items by their properties using Protobuf for efficient data transfer.
+
+![Dashboard Screenshot](screenshot.png)
 
 ## Features
 
-- **Interactive Reorganization**: Hover over any item to reorganize the entire grid based on that item's properties
+- **Interactive Filtering**: Filter items by color, shape, or category with a single click
+- **Dynamic Grouping**: Group items by any property (color, shape, or category)
+- **Visual Indicators**: Color-coded items with shape representations
 - **Multiple Properties**: Items have three properties:
   - Color: blue, red, green
   - Shape: square, circle, triangle  
   - Category: A, B, C
 - **htmx Integration**: Lightweight, server-side rendering with minimal JavaScript
-- **Responsive Grid Layout**: Clean, modern UI with visual feedback
+- **Responsive Design**: Clean, modern UI with smooth animations
+- **Protobuf Support**: Efficient binary serialization for better performance
 
 ## How It Works
 
-When you hover over an item, the server filters and sorts all items to prioritize those matching the hovered item's color. Items with the same color are moved to the front of the grid, creating an interactive and dynamic organization experience.
+1. **Filtering**: Click on any property (color, shape, or category) to filter the items
+2. **Grouping**: Use the group selector to organize items by any property
+3. **Visual Feedback**: Items animate smoothly when filtered or grouped
+4. **Efficient Updates**: Only the necessary HTML is updated using htmx
 
 ## Running the Application
 
 ### Prerequisites
 
-- Go 1.16 or higher
+- Go 1.19 or higher
+- Protocol Buffers compiler (protoc)
+- protoc-gen-go and protoc-gen-go-grpc plugins
 
 ### Installation
 
 1. Clone the repository
 2. Navigate to the project directory
-3. Run the server:
+3. Install dependencies:
+
+```bash
+go mod download
+```
+
+4. Generate Protobuf code:
+
+```bash
+cd proto && protoc --go_out=. --go_opt=paths=source_relative \
+    --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+    items.proto
+```
+
+5. Run the server:
 
 ```bash
 go run main.go
 ```
 
-4. Open your browser to `http://localhost:8080`
+6. Open your browser to `http://localhost:8080`
 
 ## Project Structure
 
 ```
 dashboard/
-├── main.go                 # Go server with htmx handlers
+├── main.go                 # Main application entry point
+├── pkg/
+│   └── itemstore/         # Item storage and business logic
+│       ├── itemstore.go   # Core item store implementation
+│       └── itemstore_test.go  # Unit tests
+├── proto/
+│   ├── items.pb.go        # Generated Protobuf code
+│   └── items.proto        # Protobuf service and message definitions
 ├── templates/
 │   ├── index.html         # Main page template
-│   └── items.html         # Partial template for items
+│   └── items.html         # Item listing template with htmx
 ├── static/
-│   └── htmx.min.js        # Minimal htmx implementation
+│   └── htmx.min.js        # htmx for dynamic content updates
 └── README.md
 ```
 
 ## Technical Details
+
+- **Backend**: Go with standard library HTTP server
+- **Frontend**: Vanilla JavaScript with htmx for dynamic updates
+- **Data Format**: Protocol Buffers for efficient client-server communication
+- **Templating**: Standard Go HTML templates
+- **Styling**: Pure CSS with modern flexbox and grid layouts
+
+## Testing
+
+Run the test suite with:
+
+```bash
+go test ./...
+```
+
+## License
+
+MIT
 
 - **Backend**: Go with html/template for server-side rendering
 - **Frontend**: htmx for dynamic interactions without full page reloads
@@ -60,12 +109,6 @@ dashboard/
 - `GET /items?filterBy=color&filterValue={value}` - Get items filtered by property
 - `GET /static/htmx.min.js` - htmx JavaScript library
 
-## Screenshots
-
-![Interactive Dashboard](https://github.com/user-attachments/assets/f4adf052-a031-4d4f-b37d-89818ad8b0b0)
-
-*Items reorganized by color when hovering over a red item*
-
 ## License
 
-MIT
+Apache License 2.0
