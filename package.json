@@ -18,6 +18,9 @@
   },
   "jest": {
     "testEnvironment": "jsdom",
+    "testEnvironmentOptions": {
+      "url": "http://localhost:8080/items"
+    },
     "testMatch": [
       "**/static/tests/**/*.test.js"
     ],
