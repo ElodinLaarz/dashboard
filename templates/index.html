@@ -51,6 +51,23 @@
             line-height: 1.6;
         }
 
+        .instructions .reset-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        .instructions .reset-btn:hover {
+            background: #764ba2;
+            transform: scale(1.05);
+        }
+
         #items-container {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -66,14 +83,14 @@
             border-radius: 15px;
             background: white;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-            cursor: pointer;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
             text-align: center;
+            position: relative;
         }
 
-        .item:hover {
-            transform: translateY(-5px) scale(1.05);
-            box-shadow: 0 8px 12px rgba(0,0,0,0.2);
+        .item.matched {
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.4);
+            transform: scale(1.02);
         }
 
         .item-id {
@@ -90,6 +107,21 @@
             font-size: 0.9em;
             font-weight: 500;
             display: inline-block;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            border: 2px solid transparent;
+        }
+
+        .item-property:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .item-property.active {
+            border: 2px solid currentColor;
+            font-weight: 700;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
         }
 
         .color-badge {
@@ -149,13 +181,61 @@
             background: none;
         }
 
-        .htmx-swapping {
+        .htmx-swapping .item {
             opacity: 0;
-            transition: opacity 0.3s ease-out;
+            transform: scale(0.8);
         }
 
-        .htmx-settling {
+        .htmx-settling .item {
             opacity: 1;
+            transform: scale(1);
+        }
+
+        .htmx-added {
+            animation: fadeInUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        #active-filter {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        #active-filter.show {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #active-filter .filter-label {
+            color: #667eea;
+            font-weight: 600;
+            font-size: 1.1em;
         }
     </style>
 </head>
@@ -165,24 +245,74 @@
         
         <div class="instructions">
             <h2>How to Use</h2>
-            <p>Hover over any item to reorganize the entire grid based on that item's properties. Items matching the hovered item's color, shape, or category will move to the front of the grid, creating an interactive and dynamic organization experience!</p>
+            <p>Click on any property tag (color, shape, or category) to group items by that property. Items with matching properties will animate to the front of the grid. Click the reset button below to return to the original order.</p>
+            <button class="reset-btn" 
+                    hx-get="/items" 
+                    hx-target="#items-container" 
+                    hx-swap="innerHTML swap:300ms"
+                    onclick="clearActiveFilter()">Reset View</button>
+        </div>
+
+        <div id="active-filter">
+            <span class="filter-label">Grouped by: <span id="filter-text"></span></span>
         </div>
 
         <div id="items-container">
             {{range .Items}}
-            <div class="item {{.Color}}" 
-                 hx-get="/items?filterBy=color&filterValue={{.Color}}"
-                 hx-trigger="mouseenter throttle:100ms"
-                 hx-target="#items-container"
-                 hx-swap="innerHTML swap:200ms">
+            <div class="item {{.Color}}">
                 <div class="item-id">Item #{{.ID}}</div>
                 <div class="shape-indicator {{.Shape}}"></div>
-                <div class="item-property color-badge">{{.Color}}</div>
-                <div class="item-property shape-badge">{{.Shape}}</div>
-                <div class="item-property category-badge">{{.Category}}</div>
+                <div class="item-property color-badge" 
+                     hx-get="/items?filterBy=color&filterValue={{.Color}}"
+                     hx-target="#items-container"
+                     hx-swap="innerHTML swap:400ms settle:600ms"
+                     onclick="setActiveFilter('color', '{{.Color}}')">
+                    {{.Color}}
+                </div>
+                <div class="item-property shape-badge" 
+                     hx-get="/items?filterBy=shape&filterValue={{.Shape}}"
+                     hx-target="#items-container"
+                     hx-swap="innerHTML swap:400ms settle:600ms"
+                     onclick="setActiveFilter('shape', '{{.Shape}}')">
+                    {{.Shape}}
+                </div>
+                <div class="item-property category-badge" 
+                     hx-get="/items?filterBy=category&filterValue={{.Category}}"
+                     hx-target="#items-container"
+                     hx-swap="innerHTML swap:400ms settle:600ms"
+                     onclick="setActiveFilter('category', '{{.Category}}')">
+                    {{.Category}}
+                </div>
             </div>
             {{end}}
         </div>
     </div>
+
+    <script>
+        function setActiveFilter(type, value) {
+            const filterDiv = document.getElementById('active-filter');
+            const filterText = document.getElementById('filter-text');
+            filterText.textContent = `${type}: ${value}`;
+            filterDiv.classList.add('show');
+            
+            // Remove active class from all badges
+            document.querySelectorAll('.item-property').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Add active class to clicked badge
+            event.target.classList.add('active');
+        }
+        
+        function clearActiveFilter() {
+            const filterDiv = document.getElementById('active-filter');
+            filterDiv.classList.remove('show');
+            
+            // Remove active class from all badges
+            document.querySelectorAll('.item-property').forEach(el => {
+                el.classList.remove('active');
+            });
+        }
+    </script>
 </body>
 </html>

@@ -1,13 +1,27 @@
 {{range .Items}}
-<div class="item {{.Color}}" 
-     hx-get="/items?filterBy=color&filterValue={{.Color}}"
-     hx-trigger="mouseenter throttle:100ms"
-     hx-target="#items-container"
-     hx-swap="innerHTML swap:200ms">
+<div class="item {{.Color}}">
     <div class="item-id">Item #{{.ID}}</div>
     <div class="shape-indicator {{.Shape}}"></div>
-    <div class="item-property color-badge">{{.Color}}</div>
-    <div class="item-property shape-badge">{{.Shape}}</div>
-    <div class="item-property category-badge">{{.Category}}</div>
+    <div class="item-property color-badge" 
+         hx-get="/items?filterBy=color&filterValue={{.Color}}"
+         hx-target="#items-container"
+         hx-swap="innerHTML swap:400ms settle:600ms"
+         onclick="setActiveFilter('color', '{{.Color}}')">
+        {{.Color}}
+    </div>
+    <div class="item-property shape-badge" 
+         hx-get="/items?filterBy=shape&filterValue={{.Shape}}"
+         hx-target="#items-container"
+         hx-swap="innerHTML swap:400ms settle:600ms"
+         onclick="setActiveFilter('shape', '{{.Shape}}')">
+        {{.Shape}}
+    </div>
+    <div class="item-property category-badge" 
+         hx-get="/items?filterBy=category&filterValue={{.Category}}"
+         hx-target="#items-container"
+         hx-swap="innerHTML swap:400ms settle:600ms"
+         onclick="setActiveFilter('category', '{{.Category}}')">
+        {{.Category}}
+    </div>
 </div>
 {{end}}
