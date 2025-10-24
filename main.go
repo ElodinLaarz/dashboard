@@ -133,6 +133,23 @@ func groupItems(items []Item, groupBy string) []GroupedItems {
 	return result
 }
 
+// getUniqueValues returns a sorted slice of unique values for a given property
+func getUniqueValues(items []Item, getter PropertyGetter) []string {
+	valueMap := make(map[string]bool)
+	var values []string
+
+	for _, item := range items {
+		value := getter(item)
+		if !valueMap[value] {
+			valueMap[value] = true
+			values = append(values, value)
+		}
+	}
+
+	sort.Strings(values)
+	return values
+}
+
 func itemsHandler(w http.ResponseWriter, r *http.Request) {
 	// Get filter parameters
 	filterBy := r.URL.Query().Get("filterBy")
@@ -161,9 +178,18 @@ func itemsHandler(w http.ResponseWriter, r *http.Request) {
 	// Group items by the specified property
 	groupedItems := groupItems(filteredItems, groupBy)
 
+	// Get unique values for sidebar
+	colorGetter, _ := getPropertyGetter("color")
+	shapeGetter, _ := getPropertyGetter("shape")
+	categoryGetter, _ := getPropertyGetter("category")
+
+	allColors := getUniqueValues(items, colorGetter)
+	allShapes := getUniqueValues(items, shapeGetter)
+	allCategories := getUniqueValues(items, categoryGetter)
+
 	// Create template with custom functions
 	funcMap := template.FuncMap{
-		"title":   strings.Title,
+		"title":    strings.Title,
 		"multiply": func(a int, b float64) float64 { return float64(a) * b },
 	}
 
@@ -175,11 +201,17 @@ func itemsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		Groups  []GroupedItems
-		GroupBy string
+		Groups       []GroupedItems
+		GroupBy      string
+		AllColors    []string
+		AllShapes    []string
+		AllCategories []string
 	}{
-		Groups:  groupedItems,
-		GroupBy: groupBy,
+		Groups:       groupedItems,
+		GroupBy:      groupBy,
+		AllColors:    allColors,
+		AllShapes:    allShapes,
+		AllCategories: allCategories,
 	}
 
 	if err := tmpl.Execute(w, data); err != nil {

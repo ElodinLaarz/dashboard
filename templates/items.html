@@ -1,61 +1,90 @@
-{{range .Groups}}
-<div class="group" data-property="{{.Property}}" data-group="{{.GroupName}}">
-    <h3 class="group-title">{{.GroupName | title}}{{if ne .Property "shape"}} {{.Property}}s{{end}}</h3>
-    <div class="group-items">
-        {{range .Items}}
-        <div class="item {{.Color}}" style="animation-delay: {{multiply .ID 0.1}}s">
-            <div class="item-id">Item #{{.ID}}</div>
-            <div class="shape-indicator {{.Shape}}"></div>
-            <div class="item-property color-badge" 
-                 hx-get="/items?filterBy=color&filterValue={{.Color}}&groupBy={{$.GroupBy}}"
-                 hx-target="#items-container"
-                 hx-swap="innerHTML swap:400ms settle:600ms"
-                 onclick="setActiveFilter('color', '{{.Color}}')">
-                {{.Color}}
+<div class="controls-container">
+    <div class="sidebar">
+        <div class="sidebar-section">
+            <h3 class="sidebar-title">Group By</h3>
+            <div class="category-group">
+                <div class="category-header" onclick="setActiveGroup('color')">
+                    <span class="category-name">Color</span>
+                    <span class="category-count">{{len .Groups}}</span>
+                </div>
+                <div class="category-items">
+                    {{range .AllColors}}
+                    <div class="category-item" 
+                         onclick="setActiveFilter('color', '{{.}}')">
+                        <span class="item-color" style="background-color: {{.}};"></span>
+                        <span class="item-name">{{.}}</span>
+                    </div>
+                    {{end}}
+                </div>
             </div>
-            <div class="item-property shape-badge" 
-                 hx-get="/items?filterBy=shape&filterValue={{.Shape}}&groupBy={{$.GroupBy}}"
-                 hx-target="#items-container"
-                 hx-swap="innerHTML swap:400ms settle:600ms"
-                 onclick="setActiveFilter('shape', '{{.Shape}}')">
-                {{.Shape}}
+            
+            <div class="category-group">
+                <div class="category-header" onclick="setActiveGroup('shape')">
+                    <span class="category-name">Shape</span>
+                </div>
+                <div class="category-items">
+                    {{range .AllShapes}}
+                    <div class="category-item" 
+                         onclick="setActiveFilter('shape', '{{.}}')">
+                        <span class="item-shape {{.}}"></span>
+                        <span class="item-name">{{.}}</span>
+                    </div>
+                    {{end}}
+                </div>
             </div>
-            <div class="item-property category-badge" 
-                 hx-get="/items?filterBy=category&filterValue={{.Category}}&groupBy={{$.GroupBy}}"
-                 hx-target="#items-container"
-                 hx-swap="innerHTML swap:400ms settle:600ms"
-                 onclick="setActiveFilter('category', '{{.Category}}')">
-                {{.Category}}
+            
+            <div class="category-group">
+                <div class="category-header" onclick="setActiveGroup('category')">
+                    <span class="category-name">Category</span>
+                </div>
+                <div class="category-items">
+                    {{range .AllCategories}}
+                    <div class="category-item" 
+                         onclick="setActiveFilter('category', '{{.}}')">
+                        <span class="item-category">{{. | title}}</span>
+                    </div>
+                    {{end}}
+                </div>
             </div>
         </div>
-        {{end}}
     </div>
 </div>
-{{end}}
 
-<div class="grouping-controls">
-    <span>Group by:</span>
-    <button class="group-btn" 
-            hx-get="/items?groupBy=color" 
-            hx-target="#items-container"
-            hx-swap="innerHTML swap:400ms settle:600ms"
-            onclick="setActiveGroup('color')">
-        Color
-    </button>
-    <button class="group-btn" 
-            hx-get="/items?groupBy=shape" 
-            hx-target="#items-container"
-            hx-swap="innerHTML swap:400ms settle:600ms"
-            onclick="setActiveGroup('shape')">
-        Shape
-    </button>
-    <button class="group-btn" 
-            hx-get="/items?groupBy=category" 
-            hx-target="#items-container"
-            hx-swap="innerHTML swap:400ms settle:600ms"
-            onclick="setActiveGroup('category')">
-        Category
-    </button>
+<div class="groups-container">
+    {{range .Groups}}
+    <div class="group" data-property="{{.Property}}" data-group="{{.GroupName}}">
+        <h3 class="group-title">{{.GroupName | title}}{{if ne .Property "shape"}} {{.Property}}s{{end}}</h3>
+        <div class="group-items">
+            {{range .Items}}
+            <div class="item {{.Color}}" style="animation-delay: {{multiply .ID 0.1}}s">
+                <div class="item-id">Item #{{.ID}}</div>
+                <div class="shape-indicator {{.Shape}}" style="{{if eq .Shape "triangle"}}border-bottom-color: {{.Color}};{{end}}"></div>
+                <div class="item-property color-badge" 
+                     hx-get="/items?filterBy=color&filterValue={{.Color}}&groupBy={{$.GroupBy}}"
+                     hx-target="#items-container"
+                     hx-swap="innerHTML swap:400ms settle:600ms"
+                     onclick="setActiveFilter('color', '{{.Color}}')">
+                    {{.Color}}
+                </div>
+                <div class="item-property shape-badge" 
+                     hx-get="/items?filterBy=shape&filterValue={{.Shape}}&groupBy={{$.GroupBy}}"
+                     hx-target="#items-container"
+                     hx-swap="innerHTML swap:400ms settle:600ms"
+                     onclick="setActiveFilter('shape', '{{.Shape}}')">
+                    {{.Shape}}
+                </div>
+                <div class="item-property category-badge" 
+                     hx-get="/items?filterBy=category&filterValue={{.Category}}&groupBy={{$.GroupBy}}"
+                     hx-target="#items-container"
+                     hx-swap="innerHTML swap:400ms settle:600ms"
+                     onclick="setActiveFilter('category', '{{.Category}}')">
+                    {{.Category}}
+                </div>
+            </div>
+            {{end}}
+        </div>
+    </div>
+    {{end}}
 </div>
 
 <script>
@@ -69,88 +98,454 @@ function multiply(a, b) {
     return a * b;
 }
 
+// Set active filter and update the view
+function setActiveFilter(filterType, filterValue) {
+    // Update active state of filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Get current URL parameters
+    const url = new URL(window.location.href);
+    const params = new URLSearchParams(url.search);
+    
+    if (filterValue) {
+        // If a specific value is provided, set the filter
+        params.set('filterBy', filterType);
+        params.set('filterValue', filterValue);
+        
+        // Mark the corresponding filter button as active
+        const activeBtn = Array.from(document.querySelectorAll('.filter-btn')).find(btn => 
+            btn.textContent.trim().toLowerCase() === `all ${filterType}s`.toLowerCase()
+        );
+        if (activeBtn) activeBtn.classList.add('active');
+    } else {
+        // If no value (All X button clicked), remove the filter
+        if (params.get('filterBy') === filterType) {
+            params.delete('filterBy');
+            params.delete('filterValue');
+        }
+    }
+    
+    // Preserve the current grouping
+    const currentGroupBy = params.get('groupBy') || 'shape';
+    params.set('groupBy', currentGroupBy);
+    
+    // Update URL and trigger HTMX request
+    url.search = params.toString();
+    htmx.ajax('GET', url.toString(), {
+        target: '#items-container',
+        swap: 'innerHTML',
+        headers: { 'HX-Request': 'true' }
+    });
+    
+    // Update browser URL without reloading
+    window.history.pushState({}, '', url.toString());
+}
+
 // Set active group button
 function setActiveGroup(groupBy) {
     document.querySelectorAll('.group-btn').forEach(btn => {
         btn.classList.toggle('active', btn.textContent.trim().toLowerCase() === groupBy);
     });
-    setActiveFilter('', '');
 }
 
-// Initialize active group on page load
+// Update filter URLs to maintain current grouping
+function updateFilterUrls() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentGroupBy = urlParams.get('groupBy') || 'shape';
+    
+    // Update all filter links to include current groupBy
+    document.querySelectorAll('[hx-get^="/items?"]').forEach(link => {
+        const href = new URL(link.getAttribute('hx-get'), window.location.origin);
+        const params = new URLSearchParams(href.search);
+        
+        // Only update if it's a filter link (not a group link)
+        if (params.has('filterBy')) {
+            params.set('groupBy', currentGroupBy);
+            href.search = params.toString();
+            link.setAttribute('hx-get', href.pathname + href.search);
+        }
+    });
+}
+
+// Clear all active filters and reset view
+function clearActiveFilter() {
+    // Remove active class from all filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Reset to default grouping (shape)
+    const defaultGroup = 'shape';
+    setActiveGroup(defaultGroup);
+    
+    // Update URL without page reload
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.delete('filterBy');
+    newUrl.searchParams.delete('filterValue');
+    newUrl.searchParams.set('groupBy', defaultGroup);
+    
+    // Use HTMX to update the content
+    htmx.ajax('GET', newUrl.toString(), {
+        target: '#items-container',
+        swap: 'innerHTML',
+        headers: {
+            'HX-Request': 'true'
+        }
+    });
+    
+    // Update browser URL without reloading the page
+    window.history.pushState({}, '', newUrl.toString());
+}
+
+// Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     const groupBy = urlParams.get('groupBy') || 'shape';
     setActiveGroup(groupBy);
+    updateFilterUrls();
+    
+    // Set up event listener for the reset button
+    const resetBtn = document.querySelector('.reset-btn');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', clearActiveFilter);
+    }
+});
+
+// Also update filter URLs when HTMX swaps content
+document.body.addEventListener('htmx:afterSwap', function() {
+    updateFilterUrls();
 });
 </script>
 
 <style>
+/* Layout */
+.groups-container {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
 .group {
-    margin-bottom: 30px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    padding: 15px;
-    animation: fadeIn 0.5s ease-out;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #4CAF50;
+    animation: fadeIn 0.3s ease-out;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Full width groups when filtered */
+.groups-container:has(.group[data-property]) .group {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Group items layout for filtered state */
+.groups-container:has(.group[data-property]) .group {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 0 30px 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+.groups-container:has(.group[data-property]) .group:last-child {
+    margin-bottom: 0;
+}
+
+.groups-container:has(.group[data-property]) .group-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    width: 100%;
+    padding: 0;
+    margin: 10px 0 0 0;
+}
+
+/* Regular grid for unfiltered state */
+.group-items:not(.groups-container:has(.group[data-property]) .group-items) {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
+    width: 100%;
+    padding: 0 5px;
+    margin: 0;
+}
+
+/* Item styling for both states */
+.item {
+    flex: 0 0 calc(20% - 15px); /* 5 items per row with gap */
+    max-width: calc(20% - 15px);
+    min-width: 160px;
+    box-sizing: border-box;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .item {
+        flex: 0 0 calc(25% - 15px); /* 4 items per row */
+        max-width: calc(25% - 15px);
+    }
+}
+
+@media (max-width: 992px) {
+    .item {
+        flex: 0 0 calc(33.333% - 15px); /* 3 items per row */
+        max-width: calc(33.333% - 15px);
+    }
+}
+
+@media (max-width: 768px) {
+    .item {
+        flex: 0 0 calc(50% - 15px); /* 2 items per row */
+        max-width: calc(50% - 15px);
+    }
+}
+
+@media (max-width: 480px) {
+    .item {
+        flex: 0 0 100%; /* 1 item per row */
+        max-width: 100%;
+    }
 }
 
 .group-title {
-    color: white;
-    margin: 0 0 15px 5px;
-    font-size: 1.5em;
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+    color: #e0e0e0;
+    margin: 0 0 15px 0;
+    padding-bottom: 10px;
+    font-size: 1.4em;
+    font-weight: 500;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.group-items {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 15px;
+/* Removed redundant .group-items rule - using grid layout for both states */
+
+/* Sidebar */
+.sidebar {
+    width: 250px;
+    background: rgba(30, 33, 40, 0.9);
+    border-radius: 10px;
+    padding: 15px;
+    margin-right: 20px;
+    height: fit-content;
+    position: sticky;
+    top: 20px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.grouping-controls {
-    margin: 20px 0;
-    padding: 10px;
+.sidebar-title {
+    color: #e0e0e0;
+    font-size: 1.1em;
+    margin: 0 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.category-group {
+    margin-bottom: 20px;
+}
+
+.category-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 8px;
+}
+
+.category-header:hover {
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
+}
+
+.category-name {
+    color: #e0e0e0;
+    font-weight: 500;
+    font-size: 0.95em;
+}
+
+.category-count {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4CAF50;
+    font-size: 0.8em;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.category-items {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-left: 10px;
+    border-left: 2px solid rgba(255, 255, 255, 0.05);
+    margin-left: 8px;
+}
+
+.category-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-}
-
-.grouping-controls span {
-    color: white;
-    font-weight: bold;
-    margin-right: 10px;
-}
-
-.group-btn {
-    padding: 5px 15px;
-    border: none;
-    border-radius: 15px;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
+    padding: 6px 10px;
+    border-radius: 4px;
     cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9em;
+    color: #b0b0b0;
+}
+
+.category-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #e0e0e0;
+}
+
+.item-color {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    margin-right: 8px;
+}
+
+.item-shape {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 8px;
+    background: currentColor;
+}
+
+.item-shape.circle {
+    border-radius: 50%;
+}
+
+.item-shape.triangle {
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 10px solid currentColor;
+    background: none;
+}
+
+.item-shape.square {
+    border-radius: 2px;
+}
+
+.item-category {
+    font-size: 0.9em;
+    color: inherit;
+}
+
+/* Items */
+.item {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 15px;
+    transition: all 0.3s ease;
+    animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.item-id {
+    font-size: 0.8em;
+    color: #888;
+    margin-bottom: 8px;
+}
+
+/* Shape indicators with dynamic colors */
+.shape-indicator {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 12px;
+    transition: all 0.3s ease;
+}
+
+/* Apply color based on item's color class */
+.item.blue .shape-indicator {
+    background: #2196F3;  /* Blue */
+}
+
+.item.red .shape-indicator {
+    background: #F44336;   /* Red */
+}
+
+.item.green .shape-indicator {
+    background: #4CAF50;   /* Green */
+}
+
+/* Shape-specific styling */
+.shape-indicator.square {
+    border-radius: 4px;
+}
+
+.shape-indicator.circle {
+    border-radius: 50%;
+}
+
+.shape-indicator.triangle {
+    width: 0;
+    height: 0;
+    border-left: 20px solid transparent;
+    border-right: 20px solid transparent;
+    border-bottom: 35px solid currentColor;
+    background: none !important;
+}
+
+.item:hover .shape-indicator {
+    transform: scale(1.1);
+    opacity: 0.9;
+}
+
+.item-property {
+    font-size: 0.8em;
+    padding: 4px 8px;
+    border-radius: 12px;
+    margin: 4px 0;
+    text-align: center;
     transition: all 0.2s ease;
 }
 
-.group-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
+/* Color badges match their actual colors */
+.color-badge[style*="blue"] { background: rgba(33, 150, 243, 0.1); color: #2196F3; }
+.color-badge[style*="red"] { background: rgba(244, 67, 54, 0.1); color: #F44336; }
+.color-badge[style*="green"] { background: rgba(76, 175, 80, 0.1); color: #4CAF50; }
+.shape-badge { background: rgba(76, 175, 80, 0.1); color: #81C784; }
+.category-badge { background: rgba(171, 71, 188, 0.1); color: #BA68C8; }
+
+.item-property:hover {
+    transform: translateX(2px);
+    filter: brightness(1.2);
 }
 
-.group-btn.active {
-    background: #4CAF50;
-    font-weight: bold;
-}
-
-.item {
-    transform-origin: center;
-    animation: slideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
-}
-
+/* Animations */
 @keyframes slideIn {
     from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(15px);
     }
     to {
         opacity: 1;
@@ -161,6 +556,51 @@ document.addEventListener('DOMContentLoaded', function() {
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .item {
+        flex: 0 0 calc(20% - 15px);
+    }
+}
+
+@media (max-width: 992px) {
+    .item {
+        flex: 0 0 calc(25% - 15px);
+    }
+}
+
+@media (max-width: 768px) {
+    .item {
+        flex: 0 0 calc(33.333% - 15px);
+    }
+    
+    .control-section, .filter-controls {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .button-group {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+    
+    .group-btn, .filter-btn {
+        flex: 1;
+        min-width: 80px;
+        text-align: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .item {
+        flex: 0 0 calc(50% - 15px);
+    }
+    
+    .group {
+        padding: 15px 10px;
+    }
 }
 </style>
 
