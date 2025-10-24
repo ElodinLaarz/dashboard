@@ -15,7 +15,7 @@ A dynamic, htmx-powered dashboard built with Go that allows filtering and groupi
   - Category: A, B, C
 - **htmx Integration**: Lightweight, server-side rendering with minimal JavaScript
 - **Responsive Design**: Clean, modern UI with smooth animations
-- **Protobuf Support**: Efficient binary serialization for better performance
+- **Protobuf Definitions**: `.proto` and generated files are included; regeneration is only required if you modify the schema
 
 ## How It Works
 
@@ -28,9 +28,10 @@ A dynamic, htmx-powered dashboard built with Go that allows filtering and groupi
 
 ### Prerequisites
 
-- Go 1.19 or higher
+- Go 1.25 or higher
 - Protocol Buffers compiler (protoc)
 - protoc-gen-go and protoc-gen-go-grpc plugins
+- Node.js and npm (for running frontend tests)
 
 ### Installation
 
@@ -42,7 +43,7 @@ A dynamic, htmx-powered dashboard built with Go that allows filtering and groupi
 go mod download
 ```
 
-4. Generate Protobuf code:
+4. (Optional) Generate Protobuf code (only if you change `proto/items.proto`):
 
 ```bash
 cd proto && protoc --go_out=. --go_opt=paths=source_relative \
@@ -66,15 +67,19 @@ dashboard/
 ├── pkg/
 │   └── itemstore/         # Item storage and business logic
 │       ├── itemstore.go   # Core item store implementation
-│       └── itemstore_test.go  # Unit tests
+│       └── itemstore_test.go  # Go unit tests
 ├── proto/
 │   ├── items.pb.go        # Generated Protobuf code
-│   └── items.proto        # Protobuf service and message definitions
+│   └── items.proto        # Protobuf message definitions
 ├── templates/
 │   ├── index.html         # Main page template
 │   └── items.html         # Item listing template with htmx
 ├── static/
-│   └── htmx.min.js        # htmx for dynamic content updates
+│   ├── htmx.min.js        # htmx for dynamic content updates
+│   └── tests/             # Jest tests for frontend behavior
+├── package.json           # Jest + jsdom setup for frontend tests
+├── jest.setup.js          # Test environment setup (jsdom mocks)
+├── babel.config.js        # Babel config for Jest
 └── README.md
 ```
 
@@ -82,28 +87,35 @@ dashboard/
 
 - **Backend**: Go with standard library HTTP server
 - **Frontend**: Vanilla JavaScript with htmx for dynamic updates
-- **Data Format**: Protocol Buffers for efficient client-server communication
+- **Data Format**: Protobuf definitions included for future expansion
 - **Templating**: Standard Go HTML templates
 - **Styling**: Pure CSS with modern flexbox and grid layouts
 
 ## Testing
 
-Run the test suite with:
+Run backend and frontend tests separately:
 
 ```bash
+# Backend (Go)
 go test ./...
-```
 
-- **Backend**: Go with html/template for server-side rendering
-- **Frontend**: htmx for dynamic interactions without full page reloads
-- **Styling**: Modern CSS with gradients and transitions
-- **Data**: In-memory data structure with 12 sample items
+# Frontend (Jest)
+npm install
+npm test
+```
 
 ## API Endpoints
 
-- `GET /` - Main dashboard page
-- `GET /items?filterBy=color&filterValue={value}` - Get items filtered by property
-- `GET /static/htmx.min.js` - htmx JavaScript library
+- `GET /` → Redirects to `/items`
+- `GET /items` → Renders items with optional query params:
+  - `groupBy` one of `color|shape|category` (default: `shape`)
+  - `filter` repeated parameter in the form `type:value`, e.g. `?filter=color:red&filter=shape:circle`
+  - Backward-compat parameters: `filterBy` and `filterValue` (e.g. `?filterBy=color&filterValue=red`)
+- `GET /static/htmx.min.js` → htmx JavaScript library
+
+## Data
+
+- In-memory data initialized on server start with sample items.
 
 ## License
 
