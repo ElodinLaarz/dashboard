@@ -6,6 +6,8 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"sort"
+	"strings"
 )
 
 //go:embed templates/* static/*
@@ -70,16 +72,20 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GroupedItems represents items grouped by shape
+type GroupedItems struct {
+	Shape string
+	Items []Item
+}
+
 func itemsHandler(w http.ResponseWriter, r *http.Request) {
 	// Get filter parameters
 	filterBy := r.URL.Query().Get("filterBy")
 	filterValue := r.URL.Query().Get("filterValue")
 
-	// Filter and sort items
-	filteredItems := make([]Item, 0)
-	
+	// Filter items
+	var filteredItems []Item
 	if filterBy != "" && filterValue != "" {
-		// Sort by matching items first
 		for _, item := range items {
 			matches := false
 			switch filterBy {
@@ -90,25 +96,7 @@ func itemsHandler(w http.ResponseWriter, r *http.Request) {
 			case "category":
 				matches = item.Category == filterValue
 			}
-			
 			if matches {
-				filteredItems = append(filteredItems, item)
-			}
-		}
-		
-		// Then add non-matching items
-		for _, item := range items {
-			matches := false
-			switch filterBy {
-			case "color":
-				matches = item.Color == filterValue
-			case "shape":
-				matches = item.Shape == filterValue
-			case "category":
-				matches = item.Category == filterValue
-			}
-			
-			if !matches {
 				filteredItems = append(filteredItems, item)
 			}
 		}
@@ -116,17 +104,43 @@ func itemsHandler(w http.ResponseWriter, r *http.Request) {
 		filteredItems = items
 	}
 
+	// Group items by shape
+	shapeMap := make(map[string][]Item)
+	for _, item := range filteredItems {
+		shapeMap[item.Shape] = append(shapeMap[item.Shape], item)
+	}
+
+	// Convert to slice of GroupedItems
+	var groupedItems []GroupedItems
+	for shape, items := range shapeMap {
+		groupedItems = append(groupedItems, GroupedItems{
+			Shape: shape,
+			Items: items,
+		})
+	}
+
+	// Sort groups by shape name for consistent ordering
+	sort.Slice(groupedItems, func(i, j int) bool {
+		return groupedItems[i].Shape < groupedItems[j].Shape
+	})
+
+	// Create template with custom functions
+	funcMap := template.FuncMap{
+		"title":   strings.Title,
+		"multiply": func(a int, b float64) float64 { return float64(a) * b },
+	}
+
 	// Parse and execute template
-	tmpl, err := template.ParseFS(embedFS, "templates/items.html")
+	tmpl, err := template.New("items.html").Funcs(funcMap).ParseFS(embedFS, "templates/items.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	data := struct {
-		Items []Item
+		Groups []GroupedItems
 	}{
-		Items: filteredItems,
+		Groups: groupedItems,
 	}
 
 	if err := tmpl.Execute(w, data); err != nil {

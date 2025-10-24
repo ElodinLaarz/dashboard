@@ -1,27 +1,95 @@
-{{range .Items}}
-<div class="item {{.Color}}">
-    <div class="item-id">Item #{{.ID}}</div>
-    <div class="shape-indicator {{.Shape}}"></div>
-    <div class="item-property color-badge" 
-         hx-get="/items?filterBy=color&filterValue={{.Color}}"
-         hx-target="#items-container"
-         hx-swap="innerHTML swap:400ms settle:600ms"
-         onclick="setActiveFilter('color', '{{.Color}}')">
-        {{.Color}}
-    </div>
-    <div class="item-property shape-badge" 
-         hx-get="/items?filterBy=shape&filterValue={{.Shape}}"
-         hx-target="#items-container"
-         hx-swap="innerHTML swap:400ms settle:600ms"
-         onclick="setActiveFilter('shape', '{{.Shape}}')">
-        {{.Shape}}
-    </div>
-    <div class="item-property category-badge" 
-         hx-get="/items?filterBy=category&filterValue={{.Category}}"
-         hx-target="#items-container"
-         hx-swap="innerHTML swap:400ms settle:600ms"
-         onclick="setActiveFilter('category', '{{.Category}}')">
-        {{.Category}}
+{{range .Groups}}
+<div class="shape-group" data-shape="{{.Shape}}">
+    <h3 class="group-title">{{.Shape | title}}s</h3>
+    <div class="group-items">
+        {{range .Items}}
+        <div class="item {{.Color}}" style="animation-delay: {{multiply .ID 0.1}}s">
+            <div class="item-id">Item #{{.ID}}</div>
+            <div class="shape-indicator {{.Shape}}"></div>
+            <div class="item-property color-badge" 
+                 hx-get="/items?filterBy=color&filterValue={{.Color}}"
+                 hx-target="#items-container"
+                 hx-swap="innerHTML swap:400ms settle:600ms"
+                 onclick="setActiveFilter('color', '{{.Color}}')">
+                {{.Color}}
+            </div>
+            <div class="item-property shape-badge" 
+                 hx-get="/items?filterBy=shape&filterValue={{.Shape}}"
+                 hx-target="#items-container"
+                 hx-swap="innerHTML swap:400ms settle:600ms"
+                 onclick="setActiveFilter('shape', '{{.Shape}}')">
+                {{.Shape}}
+            </div>
+            <div class="item-property category-badge" 
+                 hx-get="/items?filterBy=category&filterValue={{.Category}}"
+                 hx-target="#items-container"
+                 hx-swap="innerHTML swap:400ms settle:600ms"
+                 onclick="setActiveFilter('category', '{{.Category}}')">
+                {{.Category}}
+            </div>
+        </div>
+        {{end}}
     </div>
 </div>
 {{end}}
+
+<script>
+// Add a custom template function to capitalize first letter
+function title(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// Add a custom multiply function for animation delays
+function multiply(a, b) {
+    return a * b;
+}
+</script>
+
+<style>
+.shape-group {
+    margin-bottom: 30px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 15px;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.group-title {
+    color: white;
+    margin: 0 0 15px 5px;
+    font-size: 1.5em;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+}
+
+.group-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+}
+
+.item {
+    transform-origin: center;
+    animation: slideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Staggered animation for items */
+.item {
+    animation: slideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+</style>
