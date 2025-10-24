@@ -11,20 +11,11 @@
         <div class="sidebar-section">
             <h3 class="sidebar-title">Group & Filter</h3>
             <div class="category-group">
-                <div class="category-header">
-                    <div class="category-header-content" onclick="toggleCategory('color')">
+                <div class="category-header" onclick="toggleCategory('color')">
+                    <div class="category-header-content">
                         <span class="category-name">Color</span>
                         <span class="category-count">{{len .UniqueColors}}</span>
                     </div>
-                    <button class="group-by-btn" onclick="event.stopPropagation(); setActiveGroup('color')" 
-                            title="Group by Color">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="7" height="7"></rect>
-                            <rect x="14" y="3" width="7" height="7"></rect>
-                            <rect x="14" y="14" width="7" height="7"></rect>
-                            <rect x="3" y="14" width="7" height="7"></rect>
-                        </svg>
-                    </button>
                 </div>
                 <div class="category-items" id="color-items">
                     {{range $color, $count := .UniqueColors}}
@@ -38,20 +29,11 @@
             </div>
             
             <div class="category-group">
-                <div class="category-header">
-                    <div class="category-header-content" onclick="toggleCategory('shape')">
+                <div class="category-header" onclick="toggleCategory('shape')">
+                    <div class="category-header-content">
                         <span class="category-name">Shape</span>
                         <span class="category-count">{{len .UniqueShapes}}</span>
                     </div>
-                    <button class="group-by-btn" onclick="event.stopPropagation(); setActiveGroup('shape')" 
-                            title="Group by Shape">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="7" height="7"></rect>
-                            <rect x="14" y="3" width="7" height="7"></rect>
-                            <rect x="14" y="14" width="7" height="7"></rect>
-                            <rect x="3" y="14" width="7" height="7"></rect>
-                        </svg>
-                    </button>
                 </div>
                 <div class="category-items" id="shape-items">
                     {{range $shape, $count := .UniqueShapes}}
@@ -65,20 +47,11 @@
             </div>
             
             <div class="category-group">
-                <div class="category-header">
-                    <div class="category-header-content" onclick="toggleCategory('category')">
+                <div class="category-header" onclick="toggleCategory('category')">
+                    <div class="category-header-content">
                         <span class="category-name">Category</span>
                         <span class="category-count">{{len .UniqueCategories}}</span>
                     </div>
-                    <button class="group-by-btn" onclick="event.stopPropagation(); setActiveGroup('category')" 
-                            title="Group by Category">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="7" height="7"></rect>
-                            <rect x="14" y="3" width="7" height="7"></rect>
-                            <rect x="14" y="14" width="7" height="7"></rect>
-                            <rect x="3" y="14" width="7" height="7"></rect>
-                        </svg>
-                    </button>
                 </div>
                 <div class="category-items" id="category-items">
                     {{range $category, $count := .UniqueCategories}}
@@ -212,6 +185,42 @@ function setActiveGroup(groupBy) {
     });
 }
 
+// Toggle category items visibility
+function toggleCategory(category) {
+    const items = document.getElementById(`${category}-items`);
+    const header = document.querySelector(`[onclick="toggleCategory('${category}')"]`);
+    
+    if (items && header) {
+        // Toggle the 'collapsed' class on the items container
+        items.classList.toggle('collapsed');
+        
+        // Toggle the 'collapsed' class on the header for styling
+        header.classList.toggle('collapsed');
+        
+        // Store the collapsed state in localStorage
+        const isCollapsed = items.classList.contains('collapsed');
+        localStorage.setItem(`category-${category}-collapsed`, isCollapsed);
+    }
+}
+
+// Restore collapsed state from localStorage on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Find all category headers and restore their state
+    document.querySelectorAll('.category-header-content[onclick^="toggleCategory"]').forEach(header => {
+        const match = header.getAttribute('onclick').match(/toggleCategory\('(\w+)'\)/);
+        if (match) {
+            const category = match[1];
+            const isCollapsed = localStorage.getItem(`category-${category}-collapsed`) === 'true';
+            const items = document.getElementById(`${category}-items`);
+            
+            if (isCollapsed && items) {
+                items.classList.add('collapsed');
+                header.classList.add('collapsed');
+            }
+        }
+    });
+});
+
 // Update filter URLs to maintain current grouping
 function updateFilterUrls() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -295,6 +304,75 @@ document.body.addEventListener('htmx:afterSwap', function() {
 .item-color[data-color="blue"] { background-color: #2196F3; }
 .item-color[data-color="green"] { background-color: #4CAF50; }
 
+/* Category items and header styles */
+.category-header {
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    transition: all 0.2s ease;
+}
+
+.category-header-content {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.category-header:hover {
+    opacity: 0.8;
+}
+
+.category-header.collapsed .category-header-content::after {
+    content: '▶';
+    margin-left: 8px;
+    font-size: 0.8em;
+    opacity: 0.7;
+}
+
+.category-header:not(.collapsed) .category-header-content::after {
+    content: '▼';
+    margin-left: 8px;
+    font-size: 0.8em;
+    opacity: 0.7;
+}
+
+.category-items {
+    max-height: 1000px;
+    overflow: hidden;
+    opacity: 1;
+    transition: 
+        max-height 0.3s ease-in-out,
+        opacity 0.3s ease-in-out,
+        padding 0.3s ease-in-out,
+        margin 0.3s ease-in-out;
+}
+
+.category-items.collapsed {
+    max-height: 0;
+    opacity: 0;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    transition: 
+        max-height 0.3s ease-in-out,
+        opacity 0.2s ease-in-out,
+        padding 0.3s ease-in-out,
+        margin 0.3s ease-in-out;
+}
+
+/* Ensure the category items container has the right properties */
+.category-items > * {
+    transition: opacity 0.3s ease-in-out;
+}
+
+.category-items.collapsed > * {
+    opacity: 0;
+    pointer-events: none;
+}
+
 /* Shape indicators */
 .shape-indicator {
     width: 30px;
@@ -373,15 +451,17 @@ body {
     flex-shrink: 0;
     position: sticky;
     top: 20px;
-    height: fit-content;
+    height: auto;
     max-height: calc(100vh - 40px);
-    overflow-y: auto;
+    overflow: visible;
 }
 
 /* Content area */
 .content-container {
     flex: 1;
-    min-width: 0; /* Prevents flex item from overflowing container */
+    min-width: 0;
+    overflow-y: auto; /* Move scroll to content area instead of sidebar */
+    padding: 20px;
 }
 
 /* Groups container */
@@ -389,7 +469,7 @@ body {
     background-color: var(--container-bg);
     border-radius: 12px;
     padding: 20px;
-    overflow: hidden;
+    overflow: visible;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
