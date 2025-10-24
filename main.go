@@ -37,7 +37,10 @@ var items = []Item{
 
 func main() {
 	// Serve static files
-	staticFS, _ := fs.Sub(embedFS, "static")
+	staticFS, err := fs.Sub(embedFS, "static")
+	if err != nil {
+		log.Fatalf("Failed to get static directory from embedded filesystem: %v", err)
+	}
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 	
 	http.HandleFunc("/", indexHandler)
