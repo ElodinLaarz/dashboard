@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package dashboard;
+
+option go_package = "github.com/elodin/dashboard/proto";
+
+// Item represents an item in the dashboard
+message Item {
+  int32 id = 1;
+  string color = 2;
+  string shape = 3;
+  string category = 4;
+}
+
+// GroupedItems represents a collection of items grouped by a property
+message GroupedItems {
+  string group_name = 1;
+  string property = 2;
+  repeated Item items = 3;
+}
+
+// GetItemsRequest is the request for getting items
+message GetItemsRequest {
+  string filter_by = 1;
+  string filter_value = 2;
+  string group_by = 3;
+}
+
+// GetItemsResponse is the response containing grouped items
+message GetItemsResponse {
+  repeated GroupedItems groups = 1;
+  repeated string all_colors = 2;
+  repeated string all_shapes = 3;
+  repeated string all_categories = 4;
+}
+
+// ErrorResponse is a standard error response
+message ErrorResponse {
+  string error = 1;
+}

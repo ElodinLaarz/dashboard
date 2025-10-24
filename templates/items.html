@@ -14,7 +14,7 @@
                 <div class="category-header">
                     <div class="category-header-content" onclick="toggleCategory('color')">
                         <span class="category-name">Color</span>
-                        <span class="category-count">{{len .AllColors}}</span>
+                        <span class="category-count">{{len .UniqueColors}}</span>
                     </div>
                     <button class="group-by-btn" onclick="event.stopPropagation(); setActiveGroup('color')" 
                             title="Group by Color">
@@ -27,11 +27,11 @@
                     </button>
                 </div>
                 <div class="category-items" id="color-items">
-                    {{range .AllColors}}
+                    {{range $color, $count := .UniqueColors}}
                     <div class="category-item" 
-                         onclick="setActiveFilter('color', '{{.}}')">
-                        <span class="item-color" style="background-color: {{.}};"></span>
-                        <span class="item-name">{{.}}</span>
+                         onclick="setActiveFilter('color', '{{$color}}')">
+                        <span class="item-color" data-color="{{$color}}"></span>
+                        <span class="item-name">{{$color}}</span>
                     </div>
                     {{end}}
                 </div>
@@ -41,7 +41,7 @@
                 <div class="category-header">
                     <div class="category-header-content" onclick="toggleCategory('shape')">
                         <span class="category-name">Shape</span>
-                        <span class="category-count">{{len .AllShapes}}</span>
+                        <span class="category-count">{{len .UniqueShapes}}</span>
                     </div>
                     <button class="group-by-btn" onclick="event.stopPropagation(); setActiveGroup('shape')" 
                             title="Group by Shape">
@@ -54,11 +54,11 @@
                     </button>
                 </div>
                 <div class="category-items" id="shape-items">
-                    {{range .AllShapes}}
+                    {{range $shape, $count := .UniqueShapes}}
                     <div class="category-item" 
-                         onclick="setActiveFilter('shape', '{{.}}')">
-                        <span class="item-shape {{.}}"></span>
-                        <span class="item-name">{{.}}</span>
+                         onclick="setActiveFilter('shape', '{{$shape}}')">
+                        <span class="item-shape {{$shape}}"></span>
+                        <span class="item-name">{{$shape}}</span>
                     </div>
                     {{end}}
                 </div>
@@ -68,7 +68,7 @@
                 <div class="category-header">
                     <div class="category-header-content" onclick="toggleCategory('category')">
                         <span class="category-name">Category</span>
-                        <span class="category-count">{{len .AllCategories}}</span>
+                        <span class="category-count">{{len .UniqueCategories}}</span>
                     </div>
                     <button class="group-by-btn" onclick="event.stopPropagation(); setActiveGroup('category')" 
                             title="Group by Category">
@@ -81,10 +81,10 @@
                     </button>
                 </div>
                 <div class="category-items" id="category-items">
-                    {{range .AllCategories}}
+                    {{range $category, $count := .UniqueCategories}}
                     <div class="category-item" 
-                         onclick="setActiveFilter('category', '{{.}}')">
-                        <span class="item-category">{{. | title}}</span>
+                         onclick="setActiveFilter('category', '{{$category}}')">
+                        <span class="item-category">{{$category | title}}</span>
                     </div>
                     {{end}}
                 </div>
@@ -94,30 +94,30 @@
     
     <div class="content-container">
         <div class="groups-container">
-            {{range .Groups}}
-            <div class="group" data-property="{{.Property}}" data-group="{{.GroupName}}">
-                <h3 class="group-title">{{.GroupName | title}}{{if ne .Property "shape"}} {{.Property}}s{{end}}</h3>
+            {{range $groupName, $items := .GroupedItems}}
+            <div class="group" data-property="{{$.GroupBy}}" data-group="{{$groupName}}">
+                <h3 class="group-title">{{$groupName | title}}{{if ne $.GroupBy "shape"}} {{$.GroupBy}}s{{end}}</h3>
                 <div class="group-items">
-                    {{range .Items}}
-                    <div class="item {{.Color}}" style="animation-delay: {{multiply .ID 0.1}}s">
+                    {{range $items}}
+                    <div class="item item-{{.ID}} {{.Color}}">
                         <div class="item-id">Item #{{.ID}}</div>
-                        <div class="shape-indicator {{.Shape}}" style="{{if eq .Shape "triangle"}}border-bottom-color: {{.Color}};{{end}}"></div>
+                        <div class="shape-indicator {{.Shape}}" style="{{if eq .Shape "triangle"}}border-bottom-color: {{.Color}}; color: {{.Color}};{{else}}background-color: {{.Color}};{{end}}"></div>
                         <div class="item-property color-badge" 
-                             hx-get="/items?filterBy=color&filterValue={{.Color}}&groupBy={{$.GroupBy}}"
+                             hx-get="/items?filter=color:{{.Color}}&groupBy={{$.GroupBy}}"
                              hx-target="#items-container"
                              hx-swap="innerHTML swap:400ms settle:600ms"
                              onclick="setActiveFilter('color', '{{.Color}}')">
                             {{.Color}}
                         </div>
                         <div class="item-property shape-badge" 
-                             hx-get="/items?filterBy=shape&filterValue={{.Shape}}&groupBy={{$.GroupBy}}"
+                             hx-get="/items?filter=shape:{{.Shape}}&groupBy={{$.GroupBy}}"
                              hx-target="#items-container"
                              hx-swap="innerHTML swap:400ms settle:600ms"
                              onclick="setActiveFilter('shape', '{{.Shape}}')">
                             {{.Shape}}
                         </div>
                         <div class="item-property category-badge" 
-                             hx-get="/items?filterBy=category&filterValue={{.Category}}&groupBy={{$.GroupBy}}"
+                             hx-get="/items?filter=category:{{.Category}}&groupBy={{$.GroupBy}}"
                              hx-target="#items-container"
                              hx-swap="innerHTML swap:400ms settle:600ms"
                              onclick="setActiveFilter('category', '{{.Category}}')">
@@ -145,39 +145,56 @@ function multiply(a, b) {
 
 // Set active filter and update the view
 function setActiveFilter(filterType, filterValue) {
-    // Update active state of filter buttons
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
     // Get current URL parameters
     const url = new URL(window.location.href);
     const params = new URLSearchParams(url.search);
     
-    if (filterValue) {
-        // If a specific value is provided, set the filter
-        params.set('filterBy', filterType);
-        params.set('filterValue', filterValue);
-        
-        // Mark the corresponding filter button as active
-        const activeBtn = Array.from(document.querySelectorAll('.filter-btn')).find(btn => 
-            btn.textContent.trim().toLowerCase() === `all ${filterType}s`.toLowerCase()
-        );
-        if (activeBtn) activeBtn.classList.add('active');
-    } else {
-        // If no value (All X button clicked), remove the filter
-        if (params.get('filterBy') === filterType) {
-            params.delete('filterBy');
-            params.delete('filterValue');
+    // Get current filters as an array of {type, value} objects
+    const currentFilters = [];
+    
+    // Get existing filters from URL
+    for (const filter of params.getAll('filter')) {
+        const [type, value] = filter.split(':');
+        if (type && value) {
+            // Don't add if it's the same type (only allow one filter per type)
+            if (type !== filterType) {
+                currentFilters.push({ type, value });
+            }
         }
     }
     
+    // Add the new filter (or toggle it if it already exists with the same value)
+    const existingFilterIndex = currentFilters.findIndex(
+        f => f.type === filterType && f.value === filterValue
+    );
+    
+    if (existingFilterIndex >= 0) {
+        // If the exact same filter exists, remove it (toggle off)
+        currentFilters.splice(existingFilterIndex, 1);
+    } else {
+        // Otherwise, add the new filter (replacing any existing filter of the same type)
+        currentFilters.push({ type: filterType, value: filterValue });
+    }
+    
+    // Rebuild the URL with all active filters
+    const newParams = new URLSearchParams();
+    
+    // Add all active filters
+    currentFilters.forEach(filter => {
+        newParams.append('filter', `${filter.type}:${filter.value}`);
+    });
+    
     // Preserve the current grouping
     const currentGroupBy = params.get('groupBy') || 'shape';
-    params.set('groupBy', currentGroupBy);
+    newParams.set('groupBy', currentGroupBy);
     
-    // Update URL and trigger HTMX request
-    url.search = params.toString();
+    // Update the URL
+    url.search = newParams.toString();
+    
+    // Update active filters display
+    updateActiveFiltersDisplay(currentFilters);
+    
+    // Make the HTMX request
     htmx.ajax('GET', url.toString(), {
         target: '#items-container',
         swap: 'innerHTML',
@@ -273,6 +290,50 @@ document.body.addEventListener('htmx:afterSwap', function() {
 </script>
 
 <style>
+/* Dynamic color styles */
+.item-color[data-color="red"] { background-color: #F44336; }
+.item-color[data-color="blue"] { background-color: #2196F3; }
+.item-color[data-color="green"] { background-color: #4CAF50; }
+
+/* Shape indicators */
+.shape-indicator {
+    width: 30px;
+    height: 30px;
+    margin: 0 auto 8px;
+    transition: all 0.3s ease;
+}
+
+.shape-indicator.circle {
+    border-radius: 50%;
+    background-color: currentColor;
+}
+
+.shape-indicator.square {
+    width: 30px;
+    height: 30px;
+    background-color: currentColor;
+}
+
+.shape-indicator.triangle {
+    width: 0;
+    height: 0;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-bottom: 30px solid currentColor;
+    background-color: transparent;
+}
+
+/* Animation for items */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.item {
+    animation: fadeIn 0.3s ease-out forwards;
+    opacity: 0;
+}
+
 :root {
     --bg-dark: #0a0a0a;
     --card-header-bg: #1a1a1a;
@@ -439,7 +500,7 @@ body {
 
 @media (max-width: 992px) {
     .item {
-        flex: 0 0 calc(33.333% - 15px); /* 3 items per row */
+        flex: 0 0 calc(33.333% - 15px);
         max-width: calc(33.333% - 15px);
     }
 }
@@ -680,9 +741,18 @@ body {
 
 /* Color badges match their actual colors */
 .color-badge[style*="blue"] { background: rgba(33, 150, 243, 0.1); color: #2196F3; }
-.color-badge[style*="red"] { background: rgba(244, 67, 54, 0.1); color: #F44336; }
-.shape-badge { background: rgba(76, 175, 80, 0.1); color: #81C784; }
-.category-badge { background: rgba(171, 71, 188, 0.1); color: #BA68C8; }
+.color-badge[style*="red"] {
+    background: rgba(244, 67, 54, 0.1);
+    color: #F44336;
+}
+.shape-badge {
+    background: rgba(76, 175, 80, 0.1);
+    color: #81C784;
+}
+.category-badge {
+    background: rgba(171, 71, 188, 0.1);
+    color: #BA68C8;
+}
 
 .item-property:hover {
     transform: translateX(2px);
@@ -754,6 +824,15 @@ body {
 </style>
 
 <script>
+// Set animation delays for items when the DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Get all items and set their animation delay based on their position
+    const items = document.querySelectorAll('.item');
+    items.forEach((item, index) => {
+        item.style.animationDelay = `${index * 0.1}s`;
+    });
+});
+
 // Add a custom template function to capitalize first letter
 function title(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
