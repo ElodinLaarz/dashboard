@@ -94,10 +94,6 @@ Run the test suite with:
 go test ./...
 ```
 
-## License
-
-MIT
-
 - **Backend**: Go with html/template for server-side rendering
 - **Frontend**: htmx for dynamic interactions without full page reloads
 - **Styling**: Modern CSS with gradients and transitions
